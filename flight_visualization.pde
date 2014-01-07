@@ -29,6 +29,10 @@ int []graphV;
 
 //control
 int mouseMode = 0;
+int oldMouseMode;
+
+//color control
+boolean resetPressed = false;
 
 //Class
 class Airport {
@@ -94,6 +98,14 @@ void mouseWheel(MouseEvent event) {
 }
 
 void mousePressed() {
+  /* Statusbar Injection */
+  if(mouseY >= H - 50){
+    // Lock the mode
+    oldMouseMode = mouseMode;
+    mouseMode = 4;
+    statusBarPressedEvent(mouseX, mouseY);
+    return;
+  }
   if (mouseMode == 0) {
     mousePressX = mouseX;
     mousePressY = mouseY;
@@ -163,6 +175,9 @@ void mouseReleased() {
       }
     }
     splitAirport(norm);
+  } else if(mouseMode == 4){
+    statusBarReleaseEvent(mouseX, mouseY);
+    mouseMode = oldMouseMode;
   }
 }
 
@@ -399,18 +414,38 @@ void drawStatusBar(){
   fill(0);
   rect(0, H - 50, W, H);
   //Description Text
-  //textSize(16);
+  textSize(16);
   textAlign(CENTER);
   fill(descColor);
   text("Fly Me to The Dream V1.0", W / 2, H - 25);
   // Description Text
-  textSize(12);
+  //textSize(12);
   fill((mouseMode == 0) ? highlightColor : unhighlightColor);
   text("Drag", W / 2 + 150, H - 25);
   fill((mouseMode == 1) ? highlightColor : unhighlightColor);
   text("Gain", W / 2 + 200, H - 25);
   fill((mouseMode == 2) ? highlightColor : unhighlightColor);
   text("Rcov", W / 2 + 250, H - 25);
+  fill(resetPressed ? highlightColor : unhighlightColor);
+  text("Reset", 50, H - 25);
+}
+
+void statusBarReleaseEvent(int x, int y){
+  if(resetPressed){
+    resetGraph();
+    resetPressed = false;
+  }
+}
+
+void statusBarPressedEvent(int x, int y){
+  if(x < 100)
+    resetPressed = true;
+  else if(x > W / 2 + 130 && x < W / 2 + 170)
+    oldMouseMode = 0;
+  else if(x > W / 2 + 180 && x < W / 2 + 220)
+    oldMouseMode = 1;
+  else if(x > W / 2 + 230 && x < W / 2 + 270)
+    oldMouseMode = 2;
 }
 
 //transform function
