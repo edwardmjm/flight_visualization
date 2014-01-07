@@ -5,8 +5,8 @@ import java.util.Map.*;
 //param
 int W = 960;
 int H = 800;
-float L = 0, R = W, U = 800, D = 0;
-float rotAngle = HALF_PI;
+float L = 0, R = W, U = H, D = 0;
+static final float rotAngle = HALF_PI;
 float dotChange;
 
 //data
@@ -41,16 +41,7 @@ class Airport {
   }
 }
 
-void setGraphCoor(int x, int y, int w, int h) { //in pixel reference to the windows size.
-  refX = x;
-  refY = y;
-  refW = w;
-  refH = h;
-}
-
-void setup() {
-  size(W,H);
-  edgeData = loadStrings("airline.txt");
+void resetGraph() {
   smooth();
   noStroke();
   initAirPorts();
@@ -61,6 +52,20 @@ void setup() {
   dotMin=1;
   dotChange=0.1;
   L = W / 4; D = U / 4;
+  R = W; U = H;
+}
+
+void setGraphCoor(int x, int y, int w, int h) { //in pixel reference to the windows size.
+  refX = x;
+  refY = y;
+  refW = w;
+  refH = h;
+}
+
+void setup() {
+  size(W,H);
+  edgeData = loadStrings("airline.txt");
+  resetGraph();
 }
 
 void draw() {
