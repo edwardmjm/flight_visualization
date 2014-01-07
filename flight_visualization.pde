@@ -1,42 +1,57 @@
 import java.util.*;
+import java.util.Map.*;
 //data
 int n;
-float dotSize, dotMax, dotMin, dotChange;
-float lonHi, lonLo;
-float latHi, latLo;
-float maxGraphElement = 0;
-float[] airportLon;
-float[] airportLat;
-float[] airportX;
-float[] airportY;
+float dotSize, dotMax, dotMin;
+float maxGraphElement;
+
+HashMap <Integer, LinkedList <Airport>> clique = new HashMap <Integer, LinkedList <Airport>> ();
+
+Airport []port;
+HashMap <String, Integer> indexOfCity = new HashMap <String, Integer> ();
+
+float mousePressX, mousePressY, mousePressL, mousePressR, mousePressU, mousePressD;
+
+String []edgeData;
 float [][]graph;
 int []graphU;
 int []graphV;
-String cityName;
-float rotAngle = HALF_PI; //+ PI;
-HashMap <String, Integer> indexOfCity = new HashMap <String, Integer> ();
-float mousePressX, mousePressY, mousePressL, mousePressR, mousePressU, mousePressD;
+
 
 //param
 int W = 960;
 int H = 800;
 float L = 0, R = W, U = 800, D = 0;
+float rotAngle = HALF_PI; //+ PI;
+float dotChange;
+
 //control
 int mouseMode = 0;
 
+//Class
+class Airport {
+  float x, y;
+  String name;
+  Airport(float x, float y, String name) {
+    this.x = x;
+    this.y = y;
+    this.name = name;
+  }
+}
+
 void setup() {
-  size (W,H);
-  //size(1960, 1080);
+  size(W,H);
+  edgeData = loadStrings("airline.txt");
   smooth();
   noStroke();
   initAirPorts();
   buildGraph();
-  dotSize=1;
+  sortEdge();
+  dotSize=2;
   dotMax=3;
   dotMin=1;
-  dotChange=0.5;
+  dotChange=0.1;
   L = W / 4; D = U / 4;
-  println(graphU.length);
 }
  
 void draw() {
@@ -44,6 +59,12 @@ void draw() {
   drawAirline();
   drawAirport();
   transform();
+  if (mousePressed) {
+    float d = dist(mouseX, mouseY, mousePressX, mousePressY);
+    noFill();
+    stroke(255, 0, 0);
+    ellipse((mouseX + mousePressX) / 2, (mouseY + mousePressY) / 2, d, d);
+  }
 }
 
 void mouseWheel(MouseEvent event) {
@@ -63,8 +84,9 @@ void mousePressed() {
     mousePressR = R;
     mousePressU = U;
     mousePressD = D;
-  } else {
-    //...
+  } else if (mouseMode == 1) {
+    mousePressX = mouseX;
+    mousePressY = mouseY;
   }
 }
 
@@ -78,33 +100,61 @@ void mouseDragged() {
     U = mousePressU - dy;
     D = mousePressD - dy;
   } else {
-    //...
+  }
+}
+
+void mouseReleased() {
+  if (mouseMode == 1) {
+    float mx = (mouseX + mousePressX) / 2;
+    float my = (mouseY + mousePressY) / 2;
+    float r = dist(mouseX, mouseY, mousePressX, mousePressY) / 2;
+    LinkedList <Airport> v = new LinkedList <Airport> ();
+    ArrayList <Airport> norm = new ArrayList <Airport> ();
+    for (int i = 0; i < n; i++) {
+      float x = transx(port[i].x);
+      float y = transy(port[i].y);
+      if (dist(x, y, mx, my) <= r) {
+        if (clique.containsKey(i)) {
+          for (Airport e : clique.get(i))
+            v.add(e);
+          clique.remove(i);
+        } else {
+          v.add(port[i]);
+        }
+      } else if (!clique.containsKey(i)) {
+        norm.add(port[i]);
+      }
+    }
+    mergeAirport(v, norm);
+  }
+}
+
+void keyPressed() {
+  if (key == '1') {
+    mouseMode = 0;
+  } else if (key == '2') {
+    mouseMode = 1;
   }
 }
 
 void initAirPorts() {
   String dataLines[] = loadStrings("airports_gao_new.csv");
   n = dataLines.length - 1;
-  airportLon = new float [n];
-  airportLat = new float [n];
-  airportX = new float[n];
-  airportY = new float[n];
+  float airportLon;
+  float airportLat;
+  port = new Airport[n];
   for (int counter = 0; counter < n; counter++) {
     String[] temp = split(dataLines[counter + 1], ',');
     indexOfCity.put(temp[0], counter);
-    airportLat[counter]=float(temp[5]);
-    airportLon[counter]=float(temp[6]);
-    airportX[counter] = map(airportLon[counter], -170, 0, 150, width+300);
-    airportY[counter] = map(airportLat[counter], 20, 80, height-100, 0);
+    airportLat = float(temp[5]);
+    airportLon = float(temp[6]);
+    port[counter] = new Airport(map(airportLon, -170, 0, 150, width+300), map(airportLat, 20, 80, height-100, 0), temp[0]);
   }
 }
 
 void buildGraph() {
+  String []data = edgeData;
   graph = new float [n][n];
-  for (int i = 0; i < n; i++)
-    for (int j = 0; j < n; j++)
-      graph[i][j] = 0;
-  String data[] = loadStrings("airline.txt");
   int m = data.length, cnt = 0;
   for (int i = 0; i < m; i++) {
     String[] tmp = split(data[i], ',');
@@ -115,7 +165,6 @@ void buildGraph() {
       graph[u][v] += float(tmp[2]);
     }
   }
-  println("cnt = " + cnt);
   graphU = new int[cnt];
   graphV = new int[cnt];
   cnt = 0;
@@ -133,20 +182,62 @@ void buildGraph() {
       cnt++;
     }
   }
-  for (int i = 0; i < cnt; i++) {
-    for (int j = i + 1; j < cnt; j++) {
+}
+
+void sortEdge() {
+  int m = graphU.length;
+  for (int i = 0; i < m; i++) {
+    for (int j = i + 1; j < m; j++) {
       if (graph[graphU[i]][graphV[i]] > graph[graphU[j]][graphV[j]]) {
         int tmp = graphU[i]; graphU[i] = graphU[j]; graphU[j] = tmp;
         tmp = graphV[i]; graphV[i] = graphV[j]; graphV[j] = tmp;
       }
     }
   }
+  float minv = 1e20f;
+  float maxv = -1e20f;
+  for (int i = 0; i < m; i++) {
+    int u = graphU[i];
+    int v = graphV[i];
+    if (graph[u][v] > maxv) maxv = graph[u][v];
+    if (graph[u][v] < minv) minv = graph[u][v];
+  }
   maxGraphElement = maxv;
   println(maxv + ", " + minv);
 }
+
+void mergeAirport(LinkedList <Airport> v, ArrayList <Airport> norm) {
+  if (v.isEmpty()) return;
+  HashMap <String, Integer> index = new HashMap <String, Integer> ();
+  n = norm.size() + clique.size() + 1;
+  port = new Airport[n];
+  for (int i = 0; i < norm.size(); i++) {
+    port[i] = norm.get(i);
+    index.put(port[i].name, i);
+  }
+  int idx = norm.size();
+  HashMap <Integer, LinkedList <Airport>> tmp = new HashMap <Integer, LinkedList <Airport>> ();
+  for (Entry <Integer, LinkedList <Airport>> e : clique.entrySet())
+    tmp.put(idx++, e.getValue());
+  tmp.put(idx++, v);
+  clique = tmp;
+  idx = norm.size();
+  for (Entry <Integer, LinkedList <Airport>> e : clique.entrySet()) {
+    float sumx = 0, sumy = 0;
+    for (Airport e2 : e.getValue()) {
+      index.put(e2.name, idx);
+      sumx += e2.x;
+      sumy += e2.y;
+    }
+    port[idx++] = new Airport(sumx / e.getValue().size(), sumy / e.getValue().size(), new String());
+  }
+  indexOfCity = index;
+  buildGraph();
+  sortEdge();
+}
  
 void transform() {
-  //dotSize=dotSize+dotChange;
+  dotSize=dotSize+dotChange;
   if (dotSize>dotMax || dotSize<dotMin) {
     dotChange=dotChange*-1.0;
   }
@@ -155,8 +246,17 @@ void transform() {
 void zoom(float rate) {
   if (rate < -5) rate = -5;
   if (rate > 5) rate = 5;
+  if (!(rate >= -6 && rate <= 6)) return;
   float mx = (L + R) / 2;
   float my = (D + U) / 2;
+  if (L >= R) {
+    L = mx - width / 30.0;
+    R = mx + width / 30.0;
+  }
+  if (D >= U) {
+    D = my - height / 30.0;
+    U = my + height / 30.0;
+  }
   if (rate > 0) {
     if ((R - L) / width >= 3) return;
   } else if (rate < 0) {
@@ -167,8 +267,53 @@ void zoom(float rate) {
   R = (R - mx) * rate + mx;
   U = (U - my) * rate + my;
   D = (D - my) * rate + my;
+  println(L + " " + R + " " + D + " " + U);
 }
 
+void drawAirport() {
+  smooth();
+  noStroke();
+  for (int i = 0; i < n; i++) { 
+    fill(#F9FCAB);
+    Ellipse(port[i].x, port[i].y, dotSize);
+  }
+}
+ 
+void drawAirline() {
+  int u, v;
+  float tmp, x0, x1, y0, y1, d, mx, my, R, G, B, V, U, Y;
+  PVector vec = new PVector(0, 0);
+  noFill();
+  for (int i = 0; i < graphU.length; i++) {
+    u = graphU[i];
+    v = graphV[i];
+    x0 = port[u].x;
+    y0 = port[u].y;
+    x1 = port[v].x;
+    y1 = port[v].y;
+    if (x0 > x1) {
+      tmp = x0; x0 = x1; x1 = tmp;
+      tmp = y0; y0 = y1; y1 = tmp;
+    }
+    mx = (x0 + x1) / 2.0;
+    my = (y0 + y1) / 2.0;
+    vec.set(x1 - x0, y1 - y0);
+    vec.rotate(rotAngle);
+    vec.mult(2);
+    mx += vec.x;
+    my += vec.y;
+    d = dist(x0, y0, mx, my);
+    Y = changeV(graph[u][v]);
+    if (Y < 30) continue;
+    U = V = 0;
+    R = Y + 1.14 * V;
+    G = Y - 0.39 * U - 0.58 * V;
+    B = Y + 2.03 * U;
+    stroke(R, G, B);
+    Arc(mx, my, d * 2, (new PVector(x0 - mx, y0 - my)).heading(), (new PVector(x1 - mx, y1 - my)).heading());
+  }
+}
+//transform function
 float changeV(float v) {
   return v / maxGraphElement * 255.0;
 }
@@ -199,50 +344,5 @@ void Ellipse(float x, float y, float d) {
 
 void Arc(float x, float y, float d, float a0, float a1) {
   arc(transx(x), transy(y), transd(d), transd(d), a0, a1);
-}
-
-void drawAirport() {
-  smooth();
-  noStroke();
-  fill(#F9FCAB);
-  for (int i = 0; i < n; i++) { 
-    Ellipse(airportX[i], airportY[i], dotSize);
-  }
-}
- 
-void drawAirline() {
-  int u, v;
-  float tmp, x0, x1, y0, y1, d, mx, my, R, G, B, V, U, Y;
-  PVector vec = new PVector(0, 0);
-  //colorMode(HSB, maxGraphElement * 2);
-  noFill();
-  for (int i = 0; i < graphU.length; i++) {
-    u = graphU[i];
-    v = graphV[i];
-    x0 = airportX[u];
-    y0 = airportY[u];
-    x1 = airportX[v];
-    y1 = airportY[v];
-    if (x0 > x1) {
-      tmp = x0; x0 = x1; x1 = tmp;
-      tmp = y0; y0 = y1; y1 = tmp;
-    }
-    mx = (x0 + x1) / 2.0;
-    my = (y0 + y1) / 2.0;
-    vec.set(x1 - x0, y1 - y0);
-    vec.rotate(rotAngle);
-    vec.mult(2);
-    mx += vec.x;
-    my += vec.y;
-    d = dist(x0, y0, mx, my);
-    Y = changeV(graph[u][v]);
-    if (Y < 30) continue;
-    U = V = 0;
-    R = Y + 1.14 * V;
-    G = Y - 0.39 * U - 0.58 * V;
-    B = Y + 2.03 * U;
-    stroke(R, G, B);
-    Arc(mx, my, d * 2, (new PVector(x0 - mx, y0 - my)).heading(), (new PVector(x1 - mx, y1 - my)).heading());
-  }
 }
 
