@@ -46,6 +46,8 @@ class Airport {
 }
 
 void resetGraph() {
+  indexOfCity.clear();
+  clique.clear();
   smooth();
   noStroke();
   initAirPorts();
