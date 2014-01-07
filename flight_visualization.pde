@@ -6,10 +6,10 @@ int n;
 float dotSize, dotMax, dotMin;
 float maxGraphElement;
 
-ConcurrentHashMap <Integer, ConcurrentLinkedQueue <Airport>> clique = new ConcurrentHashMap <Integer, ConcurrentLinkedQueue <Airport>> ();
+HashMap <Integer, LinkedList <Airport>> clique = new HashMap <Integer, LinkedList <Airport>> ();
 
 Airport []port;
-ConcurrentHashMap <String, Integer> indexOfCity = new ConcurrentHashMap <String, Integer> ();
+HashMap <String, Integer> indexOfCity = new HashMap <String, Integer> ();
 
 float mousePressX, mousePressY, mousePressL, mousePressR, mousePressU, mousePressD;
 
@@ -54,7 +54,7 @@ void setup() {
   dotChange=0.1;
   L = W / 4; D = U / 4;
 }
- 
+
 void draw() {
   background(0);
   drawAirline();
@@ -108,8 +108,8 @@ void mouseReleased() {
     float mx = (mouseX + mousePressX) / 2;
     float my = (mouseY + mousePressY) / 2;
     float r = dist(mouseX, mouseY, mousePressX, mousePressY) / 2;
-    ConcurrentLinkedQueue <Airport> v = new ConcurrentLinkedQueue <Airport> ();
-    CopyOnWriteArrayList <Airport> norm = new CopyOnWriteArrayList <Airport> ();
+    LinkedList <Airport> v = new LinkedList <Airport> ();
+    ArrayList <Airport> norm = new ArrayList <Airport> ();
     for (int i = 0; i < n; i++) {
       float x = transx(port[i].x);
       float y = transy(port[i].y);
@@ -130,7 +130,7 @@ void mouseReleased() {
     float mx = (mouseX + mousePressX) / 2;
     float my = (mouseY + mousePressY) / 2;
     float r = dist(mouseX, mouseY, mousePressX, mousePressY) / 2;
-    CopyOnWriteArrayList <Airport> norm = new CopyOnWriteArrayList <Airport> ();
+    ArrayList <Airport> norm = new ArrayList <Airport> ();
     for (int i = 0; i < n; i++) {
       float x = transx(port[i].x);
       float y = transy(port[i].y);
@@ -177,7 +177,7 @@ void initAirPorts() {
 
 void buildGraph() {
   String []data = edgeData;
-  CopyOnWriteArrayList <Integer> U = new CopyOnWriteArrayList <Integer> (), V = new CopyOnWriteArrayList <Integer> ();
+  ArrayList <Integer> U = new ArrayList <Integer> (), V = new ArrayList <Integer> ();
   graph = new float [n][n];
   for (int i = 0; i < n; i++) for (int j = 0; j < n; j++) graph[i][j] = 0;
   int m = data.length;
@@ -227,13 +227,23 @@ void sortEdge() {
   maxGraphElement = maxv;
   graphU = u;
   graphV = v;
-  println(maxv);
-  println(lhs + " --- " + rhs + " m = " + m);
+  //println(maxv);
+  //println(lhs + " --- " + rhs + " m = " + m);
 }
 
-void mergeAirport(ConcurrentLinkedQueue <Airport> v, CopyOnWriteArrayList <Airport> norm) {
+void constructAirport(List <Airport> a, int idx, HashMap <String, Integer> index) {
+  float sumx = 0, sumy = 0;
+  for (Airport e : a) {
+    index.put(e.name, idx);
+    sumx += e.x;
+    sumy += e.y;
+  }
+  port[idx] = new Airport(sumx / a.size(), sumy / a.size(), "");
+}
+
+void mergeAirport(LinkedList <Airport> v, ArrayList <Airport> norm) {
   if (v.isEmpty()) return;
-  ConcurrentHashMap <String, Integer> index = new ConcurrentHashMap <String, Integer> ();
+  HashMap <String, Integer> index = new HashMap <String, Integer> ();
   n = norm.size() + clique.size() + 1;
   port = new Airport[n];
   for (int i = 0; i < norm.size(); i++) {
@@ -241,28 +251,21 @@ void mergeAirport(ConcurrentLinkedQueue <Airport> v, CopyOnWriteArrayList <Airpo
     index.put(port[i].name, i);
   }
   int idx = norm.size();
-  ConcurrentHashMap <Integer, ConcurrentLinkedQueue <Airport>> tmp = new ConcurrentHashMap <Integer, ConcurrentLinkedQueue <Airport>> ();
-  for (Entry <Integer, ConcurrentLinkedQueue <Airport>> e : clique.entrySet())
-    tmp.put(idx++, e.getValue());
-  tmp.put(idx++, v);
+  HashMap <Integer, LinkedList <Airport>> tmp = new HashMap <Integer, LinkedList <Airport>> ();
+  for (Entry <Integer, LinkedList <Airport>> e : clique.entrySet()) {
+    tmp.put(idx, e.getValue());
+    constructAirport(e.getValue(), idx++, index);
+  }
+  tmp.put(idx, v);
+  constructAirport(v, idx, index);
   clique = tmp;
   indexOfCity = index;
-  idx = norm.size();
-  for (Entry <Integer, ConcurrentLinkedQueue <Airport>> e : clique.entrySet()) {
-    float sumx = 0, sumy = 0;
-    for (Airport e2 : e.getValue()) {
-      index.put(e2.name, idx);
-      sumx += e2.x;
-      sumy += e2.y;
-    }
-    port[idx++] = new Airport(sumx / e.getValue().size(), sumy / e.getValue().size(), new String());
-  }
   buildGraph();
   sortEdge();
 }
 
-void splitAirport(CopyOnWriteArrayList <Airport> norm) {
-  ConcurrentHashMap <String, Integer> index = new ConcurrentHashMap <String, Integer> ();
+void splitAirport(ArrayList <Airport> norm) {
+  HashMap <String, Integer> index = new HashMap <String, Integer> ();
   n = norm.size() + clique.size();
   port = new Airport[n];
   for (int i = 0; i < norm.size(); i++) {
@@ -270,13 +273,9 @@ void splitAirport(CopyOnWriteArrayList <Airport> norm) {
     index.put(port[i].name, i);
   }
   int idx = norm.size();
-  ConcurrentHashMap <Integer, ConcurrentLinkedQueue <Airport>> tmp = new ConcurrentHashMap <Integer, ConcurrentLinkedQueue <Airport>> ();
-  for (Entry <Integer, ConcurrentLinkedQueue <Airport>> e : clique.entrySet())
-    tmp.put(idx++, e.getValue());
-  clique = tmp;
-  idx = norm.size();
-  indexOfCity = index;
-  for (Entry <Integer, ConcurrentLinkedQueue <Airport>> e : clique.entrySet()) {
+  HashMap <Integer, LinkedList <Airport>> tmp = new HashMap <Integer, LinkedList <Airport>> ();
+  for (Entry <Integer, LinkedList <Airport>> e : clique.entrySet()) {
+    tmp.put(idx, e.getValue());
     float sumx = 0, sumy = 0;
     for (Airport e2 : e.getValue()) {
       index.put(e2.name, idx);
@@ -285,6 +284,8 @@ void splitAirport(CopyOnWriteArrayList <Airport> norm) {
     }
     port[idx++] = new Airport(sumx / e.getValue().size(), sumy / e.getValue().size(), new String());
   }
+  clique = tmp;
+  indexOfCity = index;
   buildGraph();
   sortEdge();
 }
