@@ -43,11 +43,9 @@ void draw() {
 void mouseWheel(MouseEvent event) {
   float e = event.getAmount();
   if (e < 0) {
-    if (e < -2) e = -2;
-    zoom(1.01 * (-e));
+    zoom(e);
   } else if (e > 0) {
-    if (e > 2) e = 2;
-    zoom(1.0 / (1.01 * e));
+    zoom(e);
   }
 }
 
@@ -124,6 +122,7 @@ void transform() {
 void zoom(float rate) {
   float mx = (L + R) / 2;
   float my = (D + U) / 2;
+  rate = ((R - mx) + rate * 10) / (R - mx);
   L = (L - mx) * rate + mx;
   R = (R - mx) * rate + mx;
   U = (U - my) * rate + my;
