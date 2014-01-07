@@ -376,19 +376,23 @@ float changeV(float v) {
 }
 
 float transx(float x) {
-  return (x - L) / (R - L) * width;
+  return map(x, L, R, 0, width);
+  //return (x - L) / (R - L) * width;
 }
 
 float transy(float y) {
-  return (y - D) / (U - D) * height;
+  return map(y, D, U, 0, height);
+  //return (y - D) / (U - D) * height;
 }
 
 float revtransx(float x) {
-  return x / width * (R - L) + L;
+  return map(x, 0, width, L, R);
+  //return x / width * (R - L) + L;
 }
 
 float revtransy(float y) {
-  return y / height * (U - D) + D;
+  return map(y, 0, height, D, U);
+  //return y / height * (U - D) + D;
 }
 
 float transd(float d) {
