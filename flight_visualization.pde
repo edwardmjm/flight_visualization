@@ -72,6 +72,7 @@ void draw() {
   background(0);
   drawAirline();
   drawAirport();
+  drawStatusBar();
   transform();
   if (mousePressed && (mouseMode == 1 || mouseMode == 2)) {
     float d = dist(mouseX, mouseY, mousePressX, mousePressY);
@@ -387,6 +388,31 @@ void drawAirline() {
     Arc(mx, my, d * 2, (new PVector(x0 - mx, y0 - my)).heading(), (new PVector(x1 - mx, y1 - my)).heading());
   }
 }
+
+void drawStatusBar(){
+  //Color
+  color descColor = #CBCBCB; 
+  color highlightColor = #CBCBCB;
+  color unhighlightColor = #66664C;
+  //A Rectangle to cover
+  noStroke();
+  fill(0);
+  rect(0, H - 50, W, H);
+  //Description Text
+  //textSize(16);
+  textAlign(CENTER);
+  fill(descColor);
+  text("Fly Me to The Dream V1.0", W / 2, H - 25);
+  // Description Text
+  textSize(12);
+  fill((mouseMode == 0) ? highlightColor : unhighlightColor);
+  text("Drag", W / 2 + 150, H - 25);
+  fill((mouseMode == 1) ? highlightColor : unhighlightColor);
+  text("Gain", W / 2 + 200, H - 25);
+  fill((mouseMode == 2) ? highlightColor : unhighlightColor);
+  text("Rcov", W / 2 + 250, H - 25);
+}
+
 //transform function
 float changeV(float v) {
   return v / maxGraphElement * 255.0;
