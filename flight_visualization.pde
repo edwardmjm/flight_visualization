@@ -1,14 +1,15 @@
 import java.util.*;
+import java.util.concurrent.*;
 import java.util.Map.*;
 //data
 int n;
 float dotSize, dotMax, dotMin;
 float maxGraphElement;
 
-HashMap <Integer, LinkedList <Airport>> clique = new HashMap <Integer, LinkedList <Airport>> ();
+ConcurrentHashMap <Integer, ConcurrentLinkedQueue <Airport>> clique = new ConcurrentHashMap <Integer, ConcurrentLinkedQueue <Airport>> ();
 
 Airport []port;
-HashMap <String, Integer> indexOfCity = new HashMap <String, Integer> ();
+ConcurrentHashMap <String, Integer> indexOfCity = new ConcurrentHashMap <String, Integer> ();
 
 float mousePressX, mousePressY, mousePressL, mousePressR, mousePressU, mousePressD;
 
@@ -59,7 +60,7 @@ void draw() {
   drawAirline();
   drawAirport();
   transform();
-  if (mousePressed && mouseMode == 1) {
+  if (mousePressed && (mouseMode == 1 || mouseMode == 2)) {
     float d = dist(mouseX, mouseY, mousePressX, mousePressY);
     noFill();
     stroke(255, 0, 0);
@@ -84,7 +85,7 @@ void mousePressed() {
     mousePressR = R;
     mousePressU = U;
     mousePressD = D;
-  } else if (mouseMode == 1) {
+  } else if (mouseMode == 1 || mouseMode == 2) {
     mousePressX = mouseX;
     mousePressY = mouseY;
   }
@@ -99,7 +100,6 @@ void mouseDragged() {
     R = mousePressR - dx;
     U = mousePressU - dy;
     D = mousePressD - dy;
-  } else {
   }
 }
 
@@ -108,8 +108,8 @@ void mouseReleased() {
     float mx = (mouseX + mousePressX) / 2;
     float my = (mouseY + mousePressY) / 2;
     float r = dist(mouseX, mouseY, mousePressX, mousePressY) / 2;
-    LinkedList <Airport> v = new LinkedList <Airport> ();
-    ArrayList <Airport> norm = new ArrayList <Airport> ();
+    ConcurrentLinkedQueue <Airport> v = new ConcurrentLinkedQueue <Airport> ();
+    CopyOnWriteArrayList <Airport> norm = new CopyOnWriteArrayList <Airport> ();
     for (int i = 0; i < n; i++) {
       float x = transx(port[i].x);
       float y = transy(port[i].y);
@@ -126,6 +126,27 @@ void mouseReleased() {
       }
     }
     mergeAirport(v, norm);
+  } else if (mouseMode == 2) {
+    float mx = (mouseX + mousePressX) / 2;
+    float my = (mouseY + mousePressY) / 2;
+    float r = dist(mouseX, mouseY, mousePressX, mousePressY) / 2;
+    CopyOnWriteArrayList <Airport> norm = new CopyOnWriteArrayList <Airport> ();
+    for (int i = 0; i < n; i++) {
+      float x = transx(port[i].x);
+      float y = transy(port[i].y);
+      if (dist(x, y, mx, my) <= r) {
+        if (clique.containsKey(i)) {
+          for (Airport e : clique.get(i))
+            norm.add(e);
+          clique.remove(i);
+        } else {
+          norm.add(port[i]);
+        }
+      } else if (!clique.containsKey(i)) {
+        norm.add(port[i]);
+      }
+    }
+    splitAirport(norm);
   }
 }
 
@@ -134,6 +155,8 @@ void keyPressed() {
     mouseMode = 0;
   } else if (key == '2') {
     mouseMode = 1;
+  } else if (key == '3') {
+    mouseMode = 2;
   }
 }
 
@@ -154,61 +177,63 @@ void initAirPorts() {
 
 void buildGraph() {
   String []data = edgeData;
+  CopyOnWriteArrayList <Integer> U = new CopyOnWriteArrayList <Integer> (), V = new CopyOnWriteArrayList <Integer> ();
   graph = new float [n][n];
-  int m = data.length, cnt = 0;
+  for (int i = 0; i < n; i++) for (int j = 0; j < n; j++) graph[i][j] = 0;
+  int m = data.length;
   for (int i = 0; i < m; i++) {
     String[] tmp = split(data[i], ',');
     Integer u = indexOfCity.get(tmp[0]);
     Integer v = indexOfCity.get(tmp[1]);
-    if (u != null && v != null) {
-      cnt++;
-      graph[u][v] += float(tmp[2]);
+    if (u != null && v != null && !u.equals(v)) {
+      U.add(u);
+      V.add(v);
+      graph[v][u] = (graph[u][v] += float(tmp[2]));
     }
   }
-  graphU = new int[cnt];
-  graphV = new int[cnt];
-  cnt = 0;
-  float minv = 1e20f;
-  float maxv = -1e20f;
-  for (int i = 0; i < m; i++) {
-    String[] tmp = split(data[i], ',');
-    Integer u = indexOfCity.get(tmp[0]);
-    Integer v = indexOfCity.get(tmp[1]);
-    if (u != null && v != null) {
-      if (graph[u][v] < minv) minv = graph[u][v];
-      if (graph[u][v] > maxv) maxv = graph[u][v];
-      graphU[cnt] = u;
-      graphV[cnt] = v;
-      cnt++;
-    }
+  graphU = new int [U.size()];
+  graphV = new int [V.size()];
+  for (int i = 0; i < U.size(); i++) {
+    graphU[i] = U.get(i);
+    graphV[i] = V.get(i);
   }
 }
 
 void sortEdge() {
   int m = graphU.length;
+  int []u = new int[m];
+  int []v = new int[m];
+  for (int i = 0; i < m; i++) {
+    u[i] = graphU[i];
+    v[i] = graphV[i];
+  }
   for (int i = 0; i < m; i++) {
     for (int j = i + 1; j < m; j++) {
-      if (graph[graphU[i]][graphV[i]] > graph[graphU[j]][graphV[j]]) {
-        int tmp = graphU[i]; graphU[i] = graphU[j]; graphU[j] = tmp;
-        tmp = graphV[i]; graphV[i] = graphV[j]; graphV[j] = tmp;
+      if (graph[u[i]][v[i]] > graph[u[j]][v[j]]) {
+        int tmp = u[i]; u[i] = u[j]; u[j] = tmp;
+        tmp = v[i]; v[i] = v[j]; v[j] = tmp;
       }
     }
   }
-  float minv = 1e20f;
   float maxv = -1e20f;
+  int lhs = -1, rhs = -1;
   for (int i = 0; i < m; i++) {
-    int u = graphU[i];
-    int v = graphV[i];
-    if (graph[u][v] > maxv) maxv = graph[u][v];
-    if (graph[u][v] < minv) minv = graph[u][v];
+    if (graph[u[i]][v[i]] > maxv) {
+      maxv = graph[u[i]][v[i]];
+      lhs = u[i];
+      rhs = v[i];
+    }
   }
   maxGraphElement = maxv;
-  println(maxv + ", " + minv);
+  graphU = u;
+  graphV = v;
+  println(maxv);
+  println(lhs + " --- " + rhs + " m = " + m);
 }
 
-void mergeAirport(LinkedList <Airport> v, ArrayList <Airport> norm) {
+void mergeAirport(ConcurrentLinkedQueue <Airport> v, CopyOnWriteArrayList <Airport> norm) {
   if (v.isEmpty()) return;
-  HashMap <String, Integer> index = new HashMap <String, Integer> ();
+  ConcurrentHashMap <String, Integer> index = new ConcurrentHashMap <String, Integer> ();
   n = norm.size() + clique.size() + 1;
   port = new Airport[n];
   for (int i = 0; i < norm.size(); i++) {
@@ -216,13 +241,14 @@ void mergeAirport(LinkedList <Airport> v, ArrayList <Airport> norm) {
     index.put(port[i].name, i);
   }
   int idx = norm.size();
-  HashMap <Integer, LinkedList <Airport>> tmp = new HashMap <Integer, LinkedList <Airport>> ();
-  for (Entry <Integer, LinkedList <Airport>> e : clique.entrySet())
+  ConcurrentHashMap <Integer, ConcurrentLinkedQueue <Airport>> tmp = new ConcurrentHashMap <Integer, ConcurrentLinkedQueue <Airport>> ();
+  for (Entry <Integer, ConcurrentLinkedQueue <Airport>> e : clique.entrySet())
     tmp.put(idx++, e.getValue());
   tmp.put(idx++, v);
   clique = tmp;
+  indexOfCity = index;
   idx = norm.size();
-  for (Entry <Integer, LinkedList <Airport>> e : clique.entrySet()) {
+  for (Entry <Integer, ConcurrentLinkedQueue <Airport>> e : clique.entrySet()) {
     float sumx = 0, sumy = 0;
     for (Airport e2 : e.getValue()) {
       index.put(e2.name, idx);
@@ -231,7 +257,34 @@ void mergeAirport(LinkedList <Airport> v, ArrayList <Airport> norm) {
     }
     port[idx++] = new Airport(sumx / e.getValue().size(), sumy / e.getValue().size(), new String());
   }
+  buildGraph();
+  sortEdge();
+}
+
+void splitAirport(CopyOnWriteArrayList <Airport> norm) {
+  ConcurrentHashMap <String, Integer> index = new ConcurrentHashMap <String, Integer> ();
+  n = norm.size() + clique.size();
+  port = new Airport[n];
+  for (int i = 0; i < norm.size(); i++) {
+    port[i] = norm.get(i);
+    index.put(port[i].name, i);
+  }
+  int idx = norm.size();
+  ConcurrentHashMap <Integer, ConcurrentLinkedQueue <Airport>> tmp = new ConcurrentHashMap <Integer, ConcurrentLinkedQueue <Airport>> ();
+  for (Entry <Integer, ConcurrentLinkedQueue <Airport>> e : clique.entrySet())
+    tmp.put(idx++, e.getValue());
+  clique = tmp;
+  idx = norm.size();
   indexOfCity = index;
+  for (Entry <Integer, ConcurrentLinkedQueue <Airport>> e : clique.entrySet()) {
+    float sumx = 0, sumy = 0;
+    for (Airport e2 : e.getValue()) {
+      index.put(e2.name, idx);
+      sumx += e2.x;
+      sumy += e2.y;
+    }
+    port[idx++] = new Airport(sumx / e.getValue().size(), sumy / e.getValue().size(), new String());
+  }
   buildGraph();
   sortEdge();
 }
@@ -267,14 +320,17 @@ void zoom(float rate) {
   R = (R - mx) * rate + mx;
   U = (U - my) * rate + my;
   D = (D - my) * rate + my;
-  println(L + " " + R + " " + D + " " + U);
 }
 
 void drawAirport() {
   smooth();
   noStroke();
   for (int i = 0; i < n; i++) { 
-    fill(#F9FCAB);
+    if (!clique.containsKey(i)) {
+      fill(#F9FCAB);
+    } else {
+      fill(255, 0, 0);
+    }
     Ellipse(port[i].x, port[i].y, dotSize);
   }
 }
