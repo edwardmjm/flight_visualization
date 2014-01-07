@@ -59,7 +59,7 @@ void draw() {
   drawAirline();
   drawAirport();
   transform();
-  if (mousePressed) {
+  if (mousePressed && mouseMode == 1) {
     float d = dist(mouseX, mouseY, mousePressX, mousePressY);
     noFill();
     stroke(255, 0, 0);
