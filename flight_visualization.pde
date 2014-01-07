@@ -55,8 +55,10 @@ void resetGraph() {
   dotMax=3;
   dotMin=1;
   dotChange=0.1;
-  L = W / 4; D = U / 4;
-  R = W; U = H;
+  L = W / 4;
+  D = H / 4;
+  R = W;
+  U = H;
 }
 
 void setGraphCoor(int x, int y, int w, int h) { //in pixel reference to the windows size.
