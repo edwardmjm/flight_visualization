@@ -1,6 +1,14 @@
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.Map.*;
+
+//param
+int W = 960;
+int H = 800;
+float L = 0, R = W, U = 800, D = 0;
+float rotAngle = HALF_PI;
+float dotChange;
+
 //data
 int n;
 float dotSize, dotMax, dotMin;
@@ -12,19 +20,12 @@ Airport []port;
 HashMap <String, Integer> indexOfCity = new HashMap <String, Integer> ();
 
 float mousePressX, mousePressY, mousePressL, mousePressR, mousePressU, mousePressD;
+float refX = 0, refY = 0, refW = W, refH = H;
 
 String []edgeData;
 float [][]graph;
 int []graphU;
 int []graphV;
-
-
-//param
-int W = 960;
-int H = 800;
-float L = 0, R = W, U = 800, D = 0;
-float rotAngle = HALF_PI; //+ PI;
-float dotChange;
 
 //control
 int mouseMode = 0;
@@ -38,6 +39,13 @@ class Airport {
     this.y = y;
     this.name = name;
   }
+}
+
+void setGraphCoor(int x, int y, int w, int h) { //in pixel reference to the windows size.
+  refX = x;
+  refY = y;
+  refW = w;
+  refH = h;
 }
 
 void setup() {
@@ -69,11 +77,13 @@ void draw() {
 }
 
 void mouseWheel(MouseEvent event) {
-  float e = event.getAmount();
-  if (e < 0) {
-    zoom(e);
-  } else if (e > 0) {
-    zoom(e);
+  if (mouseMode < 3) {
+    float e = event.getAmount();
+    if (e < 0) {
+      zoom(e);
+    } else if (e > 0) {
+      zoom(e);
+    }
   }
 }
 
@@ -93,7 +103,7 @@ void mousePressed() {
 
 void mouseDragged() {
   if (mouseMode == 0) {
-    float dx, dy, rate =  (R - L) / width;
+    float dx, dy, rate =  (R - L) / refW;
     dx = (mouseX - mousePressX) * rate;
     dy = (mouseY - mousePressY) * rate;
     L = mousePressL - dx;
@@ -157,6 +167,8 @@ void keyPressed() {
     mouseMode = 1;
   } else if (key == '3') {
     mouseMode = 2;
+  } else if (key == '4') {
+    mouseMode = 3;
   }
 }
 
@@ -171,7 +183,7 @@ void initAirPorts() {
     indexOfCity.put(temp[0], counter);
     airportLat = float(temp[5]);
     airportLon = float(temp[6]);
-    port[counter] = new Airport(map(airportLon, -170, 0, 150, width+300), map(airportLat, 20, 80, height-100, 0), temp[0]);
+    port[counter] = new Airport(map(airportLon, -170, 0, 150, refW+300), map(airportLat, 20, 80, refH-100, 0), temp[0]);
   }
 }
 
@@ -304,17 +316,17 @@ void zoom(float rate) {
   float mx = (L + R) / 2;
   float my = (D + U) / 2;
   if (L >= R) {
-    L = mx - width / 30.0;
-    R = mx + width / 30.0;
+    L = mx - refW / 30.0;
+    R = mx + refW / 30.0;
   }
   if (D >= U) {
-    D = my - height / 30.0;
-    U = my + height / 30.0;
+    D = my - refH / 30.0;
+    U = my + refH / 30.0;
   }
   if (rate > 0) {
-    if ((R - L) / width >= 3) return;
+    if ((R - L) / refW >= 3) return;
   } else if (rate < 0) {
-    if (width / (R - L) >= 30) return;
+    if (refW / (R - L) >= 30) return;
   }
   rate = ((R - mx) + rate * 10) / (R - mx);
   L = (L - mx) * rate + mx;
@@ -376,27 +388,23 @@ float changeV(float v) {
 }
 
 float transx(float x) {
-  return map(x, L, R, 0, width);
-  //return (x - L) / (R - L) * width;
+  return map(x, L, R, refX, refX + refW);
 }
 
 float transy(float y) {
-  return map(y, D, U, 0, height);
-  //return (y - D) / (U - D) * height;
+  return map(y, D, U, refY, refY + refH);
 }
 
 float revtransx(float x) {
-  return map(x, 0, width, L, R);
-  //return x / width * (R - L) + L;
+  return map(x, refX, refX + refW, L, R);
 }
 
 float revtransy(float y) {
-  return map(y, 0, height, D, U);
-  //return y / height * (U - D) + D;
+  return map(y, refY, refY + refH, D, U);
 }
 
 float transd(float d) {
-  return d / (R - L) * width;
+  return d / (R - L) * refW;
 }
 
 void Ellipse(float x, float y, float d) {
