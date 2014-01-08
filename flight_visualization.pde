@@ -476,7 +476,7 @@ void drawTourist() {
   smooth();
   noStroke();
   for(int i = 0; i < stateCount; ++i){
-    fill(#006400);
+    fill(#436EEE);
     Ellipse(states[i].x, states[i].y, tourist[i]);
   }
 }
@@ -540,6 +540,7 @@ void drawData(){
     noStroke();
   } else if(dataMode == 3){
     drawTourist();
+    drawAirline();
   }
 }
  
