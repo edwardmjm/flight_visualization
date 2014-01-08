@@ -18,6 +18,7 @@ HashMap <Integer, LinkedList <Airport>> clique = new HashMap <Integer, LinkedLis
 
 Airport []port;
 HashMap <String, Integer> indexOfCity = new HashMap <String, Integer> ();
+HashMap <String, Integer> indexOfState = new HashMap <String, Integer> ();
 
 float mousePressX, mousePressY, mousePressL, mousePressR, mousePressU, mousePressD;
 float refX = 0, refY = 0, refW = W, refH = H;
@@ -26,6 +27,8 @@ String []edgeData;
 float [][]graph;
 int []graphU;
 int []graphV;
+
+int [][]flow;
 
 int stateCount;
 State[] states;
@@ -66,12 +69,14 @@ class State{
 
 void resetGraph() {
   indexOfCity.clear();
+  indexOfState.clear();
   clique.clear();
   smooth();
   noStroke();
   initAirPorts();
   initState();
   initIncome();
+  initFlow();
   buildGraph();
   sortEdge();
   dotSize=2;
@@ -100,7 +105,6 @@ void setup() {
 void draw() {
   background(0);
   drawData();
-  drawAirline();
   drawAirport();
   drawStatusBar();
   transform();
@@ -241,6 +245,7 @@ void initState(){
   for(int i = 0; i < stateCount; ++i){
     String[] temp = split(dataStates[i + 1], ',');
     states[i] = new State(map(float(temp[3]), -170, 0, 150, refW+300), map(float(temp[2]), 20, 80, refH-100, 0), temp[1]);
+    indexOfState.put(temp[1], i);
   }
 }
 
@@ -251,6 +256,37 @@ void initIncome(){
     String[] temp = split(dataIncomes[i + 1], ',');
     //System.out.println(int(temp[2]));
     incomes[i] = map(int(temp[2]), 36919, 70004, 0, 10);
+  }
+}
+
+void initFlow() {
+  String []dataFlow = loadStrings("stateinflow0910.csv");
+  flow = new int[stateCount][stateCount];
+  int off = 7;
+  int n = dataFlow.length - off;
+  for (int i = 0; i < n; i++) {
+    String []temp = split(dataFlow[i + off], ','); 
+    Integer u = indexOfState.get(temp[1]);
+    Integer v = indexOfState.get(temp[3]);
+    if (u != null && v != null && !u.equals(v)) {
+      flow[u][v] += int(temp[5]);   //TODO TODECIDE
+    }
+  }
+  int maxflow = 0, minflow = (int)1e9;
+  for (int i = 0; i < stateCount; i++)
+    for (int j = 0; j < stateCount; j++)
+      if (i != j && flow[i][j] > 0) {
+        if (flow[i][j] > maxflow) maxflow = flow[i][j];
+        if (flow[i][j] < minflow) minflow = flow[i][j];
+      }
+  println("maxflow = " + maxflow);
+  println("minflow = " + minflow);
+  for (int i = 0; i < stateCount; i++) {
+    for (int j = 0; j < stateCount; j++) {
+      if (flow[i][j] > 0) {
+        flow[i][j] = (int)map(flow[i][j], minflow, maxflow, 1, 255);
+      }
+    }
   }
 }
 
@@ -415,19 +451,73 @@ void drawAirport() {
   }
 }
 
+void drawState() {
+  smooth();
+  noStroke();
+  for(int i = 0; i < stateCount; ++i){
+    fill(#436EEE);
+    Ellipse(states[i].x, states[i].y, incomes[i]);
+    //System.out.println(incomes[i]);
+  }
+}
+
 void drawData(){
   if(dataMode == 0){
-
+    drawAirline();
   } else if(dataMode == 1){
-    smooth();
-    noStroke();
-    for(int i = 0; i < stateCount; ++i){
-      fill(#436EEE);
-      Ellipse(states[i].x, states[i].y, incomes[i]);
-      //System.out.println(incomes[i]);
-    }
+    drawAirline();
+    drawState();
   } else if(dataMode == 2){
-    //TODO
+    drawState();
+    noFill();
+    float Y, U, V, R, G, B;
+    for (int u = 0; u < stateCount; u++) {
+      for (int v = 0; v < stateCount; v++) {
+        if (flow[u][v] > 0) {
+          if (u == v) println("ERROR " + u);
+          //TODO   set color
+            Y = flow[u][v];
+            if (Y < 30) continue;
+            U = V = 0;
+            R = Y + 1.14 * V;
+            G = Y - 0.39 * U - 0.58 * V;
+            B = Y + 2.03 * U;
+            stroke(R, G, B);
+    
+          //stroke(255, 0, 0);
+          float x0, y0, x1, y1, tmp, mx, my, d;
+          x0 = states[u].x;
+          y0 = states[u].y;
+          x1 = states[v].x;
+          y1 = states[v].y;
+          PVector vec = new PVector();
+          if (x0 > x1) {
+            tmp = x0; x0 = x1; x1 = tmp;
+            tmp = y0; y0 = y1; y1 = tmp;
+            mx = (x0 + x1) / 2.0;
+            my = (y0 + y1) / 2.0;
+            vec.set(x1 - x0, y1 - y0);
+            vec.rotate(rotAngle + PI);
+            vec.mult(2);
+            mx += vec.x;
+            my += vec.y;
+            d = dist(x0, y0, mx, my);
+            Arc(mx, my, d * 2, (new PVector(x1 - mx, y1 - my)).heading(), (new PVector(x0 - mx, y0 - my)).heading());
+          } else {
+            mx = (x0 + x1) / 2.0;
+            my = (y0 + y1) / 2.0;
+            vec.set(x1 - x0, y1 - y0);
+            vec.rotate(rotAngle);
+            vec.mult(2);
+            mx += vec.x;
+            my += vec.y;
+            d = dist(x0, y0, mx, my);
+            Arc(mx, my, d * 2, (new PVector(x0 - mx, y0 - my)).heading(), (new PVector(x1 - mx, y1 - my)).heading());
+          }
+        }
+      }
+    }
+    noStroke();
   }
 }
  
