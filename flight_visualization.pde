@@ -35,6 +35,7 @@ float[] incomes;
 //control
 int mouseMode = 0;
 int oldMouseMode;
+int dataMode = 0, oldDataMode;
 
 //color control
 boolean resetPressed = false;
@@ -245,7 +246,7 @@ void initIncome(){
   incomes = new float[stateCount];
   for(int i = 0; i < stateCount; ++i){
     String[] temp = split(dataIncomes[i + 1], ',');
-    System.out.println(int(temp[2]));
+    //System.out.println(int(temp[2]));
     incomes[i] = map(int(temp[2]), 36919, 70004, 0, 10);
   }
 }
@@ -412,12 +413,16 @@ void drawAirport() {
 }
 
 void drawData(){
-  smooth();
-  noStroke();
-  for(int i = 0; i < stateCount; ++i){
-    fill(0, 255, 0);
-    Ellipse(states[i].x, states[i].y, incomes[i]);
-    //System.out.println(incomes[i]);
+  if(dataMode == 0){
+
+  } else if(dataMode == 1){
+    smooth();
+    noStroke();
+    for(int i = 0; i < stateCount; ++i){
+      fill(#436EEE);
+      Ellipse(states[i].x, states[i].y, incomes[i]);
+      //System.out.println(incomes[i]);
+    }
   }
 }
  
@@ -480,12 +485,22 @@ void drawStatusBar(){
   text("Rcov", W / 2 + 250, H - 25);
   fill(resetPressed ? highlightColor : unhighlightColor);
   text("Reset", 50, H - 25);
+  fill((dataMode == 0) ? highlightColor : unhighlightColor);
+  text("None", W / 2 - 280, H - 25);
+  fill((dataMode == 1) ? highlightColor : unhighlightColor);
+  text("Income", W / 2 - 200, H - 25);
 }
 
 void statusBarReleaseEvent(int x, int y){
   if(resetPressed){
     resetGraph();
     resetPressed = false;
+  } else {
+    // Data choosing
+    if(x >= W / 2 - 300 && x <= W / 2 - 260)
+      dataMode = 0;
+    else if(x >= W / 2 - 250 && x <= W / 2 - 150)
+      dataMode = 1;
   }
 }
 
