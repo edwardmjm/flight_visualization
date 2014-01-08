@@ -37,6 +37,9 @@ int mouseMode = 0;
 int oldMouseMode;
 int dataMode = 0, oldDataMode;
 
+int noneBP = 300, noneLen = 20, incomeBP = 230, incomeLen = 50;
+int flowBP = 160, flowLen = 20;
+
 //color control
 boolean resetPressed = false;
 
@@ -486,9 +489,11 @@ void drawStatusBar(){
   fill(resetPressed ? highlightColor : unhighlightColor);
   text("Reset", 50, H - 25);
   fill((dataMode == 0) ? highlightColor : unhighlightColor);
-  text("None", W / 2 - 280, H - 25);
+  text("None", W / 2 - noneBP, H - 25);
   fill((dataMode == 1) ? highlightColor : unhighlightColor);
-  text("Income", W / 2 - 200, H - 25);
+  text("Income", W / 2 - incomeBP, H - 25);
+  fill((dataMode == 2) ? highlightColor : unhighlightColor);
+  text("Flow", W / 2 - flowBP, H - 25);
 }
 
 void statusBarReleaseEvent(int x, int y){
@@ -497,10 +502,12 @@ void statusBarReleaseEvent(int x, int y){
     resetPressed = false;
   } else {
     // Data choosing
-    if(x >= W / 2 - 300 && x <= W / 2 - 260)
+    if(x >= W / 2 - noneBP - noneLen && x <= W / 2 - noneBP + noneLen)
       dataMode = 0;
-    else if(x >= W / 2 - 250 && x <= W / 2 - 150)
+    else if(x >= W / 2 - incomeBP - incomeLen && x <= W / 2 - incomeBP + incomeLen)
       dataMode = 1;
+    else if(x >= W / 2 - flowBP - flowLen && x <= W / 2 - flowBP + flowLen)
+      dataMode = 2;
   }
 }
 
