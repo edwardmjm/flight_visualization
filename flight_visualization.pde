@@ -280,7 +280,7 @@ void initFlow() {
     Integer u = indexOfState.get(temp[1]);
     Integer v = indexOfState.get(temp[3]);
     if (u != null && v != null && !u.equals(v)) {
-      flow[u][v] += int(temp[5]);   //TODO TODECIDE
+      flow[u][v] += int(temp[7]);   //TODO TODECIDE
     }
   }
   int maxflow = 0, minflow = (int)1e9;
@@ -295,7 +295,7 @@ void initFlow() {
   for (int i = 0; i < stateCount; i++) {
     for (int j = 0; j < stateCount; j++) {
       if (flow[i][j] > 0) {
-        flow[i][j] = (int)map(flow[i][j], minflow, maxflow, 1, 255);
+        flow[i][j] = (int)map(flow[i][j], minflow, maxflow, 1, 100);
       }
     }
   }
@@ -488,56 +488,9 @@ void drawData(){
     drawAirline();
     drawState();
   } else if(dataMode == 2){
+    drawFlow();
+    drawAirline();
     drawState();
-    noFill();
-    float Y, U, V, R, G, B;
-    for (int u = 0; u < stateCount; u++) {
-      for (int v = 0; v < stateCount; v++) {
-        if (flow[u][v] > 0) {
-          if (u == v) println("ERROR " + u);
-          //TODO   set color
-            Y = flow[u][v];
-            if (Y < 30) continue;
-            U = V = 0;
-            R = Y + 1.14 * V;
-            G = Y - 0.39 * U - 0.58 * V;
-            B = Y + 2.03 * U;
-            stroke(R, G, B);
-    
-          //stroke(255, 0, 0);
-          float x0, y0, x1, y1, tmp, mx, my, d;
-          x0 = states[u].x;
-          y0 = states[u].y;
-          x1 = states[v].x;
-          y1 = states[v].y;
-          PVector vec = new PVector();
-          if (x0 > x1) {
-            tmp = x0; x0 = x1; x1 = tmp;
-            tmp = y0; y0 = y1; y1 = tmp;
-            mx = (x0 + x1) / 2.0;
-            my = (y0 + y1) / 2.0;
-            vec.set(x1 - x0, y1 - y0);
-            vec.rotate(rotAngle + PI);
-            vec.mult(2);
-            mx += vec.x;
-            my += vec.y;
-            d = dist(x0, y0, mx, my);
-            Arc(mx, my, d * 2, (new PVector(x1 - mx, y1 - my)).heading(), (new PVector(x0 - mx, y0 - my)).heading());
-          } else {
-            mx = (x0 + x1) / 2.0;
-            my = (y0 + y1) / 2.0;
-            vec.set(x1 - x0, y1 - y0);
-            vec.rotate(rotAngle);
-            vec.mult(2);
-            mx += vec.x;
-            my += vec.y;
-            d = dist(x0, y0, mx, my);
-            Arc(mx, my, d * 2, (new PVector(x0 - mx, y0 - my)).heading(), (new PVector(x1 - mx, y1 - my)).heading());
-          }
-        }
-      }
-    }
-    noStroke();
   } else if(dataMode == 3){
     drawTourist();
     drawAirline();
@@ -577,6 +530,57 @@ void drawAirline() {
     stroke(R, G, B);
     Arc(mx, my, d * 2, (new PVector(x0 - mx, y0 - my)).heading(), (new PVector(x1 - mx, y1 - my)).heading());
   }
+}
+
+void drawFlow() {
+  noFill();
+  colorMode(RGB, 100);
+  float Y, U, V, R, G, B;
+  for (int u = 0; u < stateCount; u++) {
+    for (int v = 0; v < stateCount; v++) {
+      if (flow[u][v] > 0) {
+        if (u == v) println("ERROR " + u);
+        //TODO   set color
+        R = flow[u][v];
+        G = 100 - flow[u][v];
+        B = 0;
+        stroke(R, G, B);
+        if (flow[u][v] < 20) continue;
+        //stroke(255, 0, 0);
+        float x0, y0, x1, y1, tmp, mx, my, d;
+        x0 = states[u].x;
+        y0 = states[u].y;
+        x1 = states[v].x;
+        y1 = states[v].y;
+        PVector vec = new PVector();
+        if (x0 > x1) {
+          tmp = x0; x0 = x1; x1 = tmp;
+          tmp = y0; y0 = y1; y1 = tmp;
+          mx = (x0 + x1) / 2.0;
+          my = (y0 + y1) / 2.0;
+          vec.set(x1 - x0, y1 - y0);
+          vec.rotate(rotAngle + PI);
+          vec.mult(2);
+          mx += vec.x;
+          my += vec.y;
+          d = dist(x0, y0, mx, my);
+          MultiArc(mx, my, d * 2, (new PVector(x1 - mx, y1 - my)).heading(), (new PVector(x0 - mx, y0 - my)).heading());
+        } else {
+          mx = (x0 + x1) / 2.0;
+          my = (y0 + y1) / 2.0;
+          vec.set(x1 - x0, y1 - y0);
+          vec.rotate(rotAngle);
+          vec.mult(2);
+          mx += vec.x;
+          my += vec.y;
+          d = dist(x0, y0, mx, my);
+          MultiArc(mx, my, d * 2, (new PVector(x0 - mx, y0 - my)).heading(), (new PVector(x1 - mx, y1 - my)).heading());
+        }
+      }
+    }
+  }
+  colorMode(RGB, 255);
+  noStroke();
 }
 
 void drawStatusBar(){
@@ -672,5 +676,10 @@ void Ellipse(float x, float y, float d) {
 
 void Arc(float x, float y, float d, float a0, float a1) {
   arc(transx(x), transy(y), transd(d), transd(d), a0, a1);
+}
+
+void MultiArc(float x, float y, float d, float a0, float a1) {
+  for (int i = 0; i < 3; i++)
+    Arc(x + i, y + i, d, a0, a1);
 }
 
