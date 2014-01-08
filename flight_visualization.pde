@@ -34,14 +34,15 @@ int stateCount;
 State[] states;
 
 float[] incomes;
+float[] tourist;
 
 //control
 int mouseMode = 0;
 int oldMouseMode;
 int dataMode = 0, oldDataMode;
 
-int noneBP = 300, noneLen = 20, incomeBP = 230, incomeLen = 50;
-int flowBP = 160, flowLen = 20;
+int noneBP = 350, noneLen = 20, incomeBP = 280, incomeLen = 50;
+int flowBP = 210, flowLen = 20, tourBP = 190, tourLen = 20;
 
 //color control
 boolean resetPressed = false;
@@ -256,6 +257,15 @@ void initIncome(){
     String[] temp = split(dataIncomes[i + 1], ',');
     //System.out.println(int(temp[2]));
     incomes[i] = map(int(temp[2]), 36919, 70004, 0, 10);
+  }
+}
+
+void initTourist(){
+  String dataTourist[] = loadStrings("tourismByState.csv");
+  tourist = new float[stateCount];
+  for(int i = 0; i < stateCount; ++i){
+    String[] temp = split(dataTourist[i + 1], ',');
+    tourist[i] = map(float(temp[1]), 0, 75, 0, 10);
   }
 }
 
