@@ -42,7 +42,7 @@ int oldMouseMode;
 int dataMode = 0, oldDataMode;
 
 int noneBP = 350, noneLen = 20, incomeBP = 280, incomeLen = 50;
-int flowBP = 210, flowLen = 20, tourBP = 190, tourLen = 20;
+int flowBP = 210, flowLen = 20, tourBP = 150, tourLen = 20;
 
 //color control
 boolean resetPressed = false;
@@ -78,6 +78,7 @@ void resetGraph() {
   initState();
   initIncome();
   initFlow();
+  initTourist();
   buildGraph();
   sortEdge();
   dotSize=2;
@@ -471,6 +472,15 @@ void drawState() {
   }
 }
 
+void drawTourist() {
+  smooth();
+  noStroke();
+  for(int i = 0; i < stateCount; ++i){
+    fill(#006400);
+    Ellipse(states[i].x, states[i].y, tourist[i]);
+  }
+}
+
 void drawData(){
   if(dataMode == 0){
     drawAirline();
@@ -528,6 +538,8 @@ void drawData(){
       }
     }
     noStroke();
+  } else if(dataMode == 3){
+    drawTourist();
   }
 }
  
@@ -596,6 +608,8 @@ void drawStatusBar(){
   text("Income", W / 2 - incomeBP, H - 25);
   fill((dataMode == 2) ? highlightColor : unhighlightColor);
   text("Flow", W / 2 - flowBP, H - 25);
+  fill((dataMode == 3) ? highlightColor : unhighlightColor);
+  text("Tour", W / 2 - tourBP, H - 25);
 }
 
 void statusBarReleaseEvent(int x, int y){
@@ -610,6 +624,8 @@ void statusBarReleaseEvent(int x, int y){
       dataMode = 1;
     else if(x >= W / 2 - flowBP - flowLen && x <= W / 2 - flowBP + flowLen)
       dataMode = 2;
+    else if(x >= W / 2 - tourBP - tourLen && x <= W / 2 - tourBP + tourLen)
+      dataMode = 3;
   }
 }
 
