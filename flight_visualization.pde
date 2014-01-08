@@ -27,6 +27,11 @@ float [][]graph;
 int []graphU;
 int []graphV;
 
+int stateCount;
+State[] states;
+
+float[] incomes;
+
 //control
 int mouseMode = 0;
 int oldMouseMode;
@@ -45,18 +50,30 @@ class Airport {
   }
 }
 
+class State{
+  String name;
+  float x, y;
+  State(float x, float y, String name){
+    this.x = x;
+    this.y = y;
+    this.name = name;
+  }
+}
+
 void resetGraph() {
   indexOfCity.clear();
   clique.clear();
   smooth();
   noStroke();
   initAirPorts();
+  initState();
+  initIncome();
   buildGraph();
   sortEdge();
   dotSize=2;
-  dotMax=3;
+  dotMax=2;
   dotMin=1;
-  dotChange=0.1;
+  dotChange=0.05;
   L = W / 4;
   D = H / 4;
   R = W;
@@ -78,6 +95,7 @@ void setup() {
 
 void draw() {
   background(0);
+  drawData();
   drawAirline();
   drawAirport();
   drawStatusBar();
@@ -209,6 +227,26 @@ void initAirPorts() {
     airportLat = float(temp[5]);
     airportLon = float(temp[6]);
     port[counter] = new Airport(map(airportLon, -170, 0, 150, refW+300), map(airportLat, 20, 80, refH-100, 0), temp[0]);
+  }
+}
+
+void initState(){
+  String dataStates[] = loadStrings("locationOfState.csv");
+  stateCount = dataStates.length - 1;
+  states = new State[stateCount];
+  for(int i = 0; i < stateCount; ++i){
+    String[] temp = split(dataStates[i + 1], ',');
+    states[i] = new State(map(float(temp[3]), -170, 0, 150, refW+300), map(float(temp[2]), 20, 80, refH-100, 0), temp[1]);
+  }
+}
+
+void initIncome(){
+  String dataIncomes[] = loadStrings("IncomeByState.csv");
+  incomes = new float[stateCount];
+  for(int i = 0; i < stateCount; ++i){
+    String[] temp = split(dataIncomes[i + 1], ',');
+    System.out.println(int(temp[2]));
+    incomes[i] = map(int(temp[2]), 36919, 70004, 0, 10);
   }
 }
 
@@ -370,6 +408,16 @@ void drawAirport() {
       fill(255, 0, 0);
     }
     Ellipse(port[i].x, port[i].y, dotSize);
+  }
+}
+
+void drawData(){
+  smooth();
+  noStroke();
+  for(int i = 0; i < stateCount; ++i){
+    fill(0, 255, 0);
+    Ellipse(states[i].x, states[i].y, incomes[i]);
+    //System.out.println(incomes[i]);
   }
 }
  
