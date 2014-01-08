@@ -7,6 +7,7 @@ int W = 720;
 int H = 600;
 float L = 0, R = W, U = H, D = 0;
 float disPlayLength = 50;
+float disPlayLength2 = 200;
 static final float rotAngle = HALF_PI;
 float dotChange;
 
@@ -63,11 +64,13 @@ class Airport {
 
 class State{
   String name;
+  String trueName;
   float x, y;
-  State(float x, float y, String name){
+  State(float x, float y, String name, String trueName){
     this.x = x;
     this.y = y;
     this.name = name;
+    this.trueName = trueName;
   }
 }
 
@@ -112,6 +115,7 @@ void draw() {
   drawData();
   drawAirport();
   drawStatusBar();
+  drawText();
   transform();
   if (mousePressed && (mouseMode == 1 || mouseMode == 2)) {
     float d = dist(mouseX, mouseY, mousePressX, mousePressY);
@@ -249,7 +253,7 @@ void initState(){
   states = new State[stateCount];
   for(int i = 0; i < stateCount; ++i){
     String[] temp = split(dataStates[i + 1], ',');
-    states[i] = new State(map(float(temp[3]), -170, 0, 150, refW+300), map(float(temp[2]), 20, 80, refH-100, 0), temp[1]);
+    states[i] = new State(map(float(temp[3]), -170, 0, 150, refW+300), map(float(temp[2]), 20, 80, refH-100, 0), temp[1], temp[0]);
     indexOfState.put(temp[1], i);
   }
 }
@@ -452,6 +456,21 @@ void zoom(float rate) {
   D = (D - my) * rate + my;
 }
 
+void drawText() {
+  smooth();
+  noStroke();
+  for (int i = 0; i < n; i++)
+    if (R - L <= disPlayLength) {
+      fill(255, 0, 0);
+      text(port[i].trueName, transx(port[i].x), transy(port[i].y));
+    }
+  for (int i = 0; i < stateCount; i++) {
+    fill(255, 0, 0);
+    if (R - L < disPlayLength2)
+      text(states[i].trueName, transx(states[i].x), transy(states[i].y));
+  }
+}
+
 void drawAirport() {
   smooth();
   noStroke();
@@ -463,11 +482,6 @@ void drawAirport() {
     }
     Ellipse(port[i].x, port[i].y, dotSize);
   }
-  for (int i = 0; i < n; i++)
-    if (R - L <= disPlayLength) {
-      fill(255, 0, 0);
-      text(port[i].trueName, transx(port[i].x), transy(port[i].y));
-    }
 }
 
 void drawState() {
@@ -476,7 +490,6 @@ void drawState() {
   for(int i = 0; i < stateCount; ++i){
     fill(#436EEE);
     Ellipse(states[i].x, states[i].y, incomes[i]);
-    //System.out.println(incomes[i]);
   }
 }
 
