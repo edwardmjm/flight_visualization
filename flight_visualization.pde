@@ -3,8 +3,8 @@ import java.util.concurrent.*;
 import java.util.Map.*;
 
 //param
-int W = 960;
-int H = 800;
+int W = 720;
+int H = 600;
 float L = 0, R = W, U = H, D = 0;
 static final float rotAngle = HALF_PI;
 float dotChange;
@@ -41,8 +41,8 @@ int mouseMode = 0;
 int oldMouseMode;
 int dataMode = 0, oldDataMode;
 
-int noneBP = 350, noneLen = 20, incomeBP = 280, incomeLen = 50;
-int flowBP = 210, flowLen = 20, tourBP = 150, tourLen = 20;
+int noneBP = 300, noneLen = 20, incomeBP = 230, incomeLen = 50;
+int flowBP = 160, flowLen = 20, tourBP = 100, tourLen = 20;
 
 //color control
 boolean resetPressed = false;
@@ -596,7 +596,7 @@ void drawStatusBar(){
   textSize(16);
   textAlign(CENTER);
   fill(descColor);
-  text("Fly Me to The Dream V1.0", W / 2, H - 25);
+  text("Indra's Net", W / 2, H - 25);
   // Description Text
   //textSize(12);
   fill((mouseMode == 0) ? highlightColor : unhighlightColor);
@@ -606,7 +606,7 @@ void drawStatusBar(){
   fill((mouseMode == 2) ? highlightColor : unhighlightColor);
   text("Rcov", W / 2 + 250, H - 25);
   fill(resetPressed ? highlightColor : unhighlightColor);
-  text("Reset", 50, H - 25);
+  text("Reset", W - 50, H - 25);
   fill((dataMode == 0) ? highlightColor : unhighlightColor);
   text("None", W / 2 - noneBP, H - 25);
   fill((dataMode == 1) ? highlightColor : unhighlightColor);
@@ -635,7 +635,7 @@ void statusBarReleaseEvent(int x, int y){
 }
 
 void statusBarPressedEvent(int x, int y){
-  if(x < 100)
+  if(x > W - 80)
     resetPressed = true;
   else if(x > W / 2 + 130 && x < W / 2 + 170)
     oldMouseMode = 0;
