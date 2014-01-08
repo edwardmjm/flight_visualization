@@ -6,6 +6,7 @@ import java.util.Map.*;
 int W = 720;
 int H = 600;
 float L = 0, R = W, U = H, D = 0;
+float disPlayLength = 50;
 static final float rotAngle = HALF_PI;
 float dotChange;
 
@@ -51,10 +52,12 @@ boolean resetPressed = false;
 class Airport {
   float x, y;
   String name;
-  Airport(float x, float y, String name) {
+  String trueName;
+  Airport(float x, float y, String name, String trueName) {
     this.x = x;
     this.y = y;
     this.name = name;
+    this.trueName = trueName;
   }
 }
 
@@ -236,7 +239,7 @@ void initAirPorts() {
     indexOfCity.put(temp[0], counter);
     airportLat = float(temp[5]);
     airportLon = float(temp[6]);
-    port[counter] = new Airport(map(airportLon, -170, 0, 150, refW+300), map(airportLat, 20, 80, refH-100, 0), temp[0]);
+    port[counter] = new Airport(map(airportLon, -170, 0, 150, refW+300), map(airportLat, 20, 80, refH-100, 0), temp[0], temp[1]);
   }
 }
 
@@ -364,7 +367,7 @@ void constructAirport(List <Airport> a, int idx, HashMap <String, Integer> index
     sumx += e.x;
     sumy += e.y;
   }
-  port[idx] = new Airport(sumx / a.size(), sumy / a.size(), "");
+  port[idx] = new Airport(sumx / a.size(), sumy / a.size(), "", "");
 }
 
 void mergeAirport(LinkedList <Airport> v, ArrayList <Airport> norm) {
@@ -408,7 +411,7 @@ void splitAirport(ArrayList <Airport> norm) {
       sumx += e2.x;
       sumy += e2.y;
     }
-    port[idx++] = new Airport(sumx / e.getValue().size(), sumy / e.getValue().size(), new String());
+    port[idx++] = new Airport(sumx / e.getValue().size(), sumy / e.getValue().size(), "", "");
   }
   clique = tmp;
   indexOfCity = index;
@@ -460,6 +463,11 @@ void drawAirport() {
     }
     Ellipse(port[i].x, port[i].y, dotSize);
   }
+  for (int i = 0; i < n; i++)
+    if (R - L <= disPlayLength) {
+      fill(255, 0, 0);
+      text(port[i].trueName, transx(port[i].x), transy(port[i].y));
+    }
 }
 
 void drawState() {
