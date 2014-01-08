@@ -426,6 +426,8 @@ void drawData(){
       Ellipse(states[i].x, states[i].y, incomes[i]);
       //System.out.println(incomes[i]);
     }
+  } else if(dataMode == 2){
+    //TODO
   }
 }
  
