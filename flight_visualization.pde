@@ -87,10 +87,10 @@ void resetGraph() {
   initTourist();
   buildGraph();
   sortEdge();
-  dotSize=2;
+  dotSize=1;
   dotMax=2;
   dotMin=1;
-  dotChange=0.05;
+  dotChange=0;
   L = W / 4;
   D = H / 4;
   R = W;
