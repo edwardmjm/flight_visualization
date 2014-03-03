@@ -233,7 +233,7 @@ void keyPressed() {
 }
 
 void initAirPorts() {
-  String dataLines[] = loadStrings("airports_gao_new.csv");
+  String dataLines[] = loadStrings("airports.csv");
   n = dataLines.length - 1;
   float airportLon;
   float airportLat;
